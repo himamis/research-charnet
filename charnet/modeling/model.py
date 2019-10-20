@@ -145,7 +145,7 @@ class CharNet(nn.Module):
         self.transform = self.build_transform()
 
     def forward(self, im, im_scale_w, im_scale_h, original_im_w, original_im_h):
-        im = self.transform(im).cuda()
+        im = self.transform(im)
         im = im.unsqueeze(0)
         features = self.backbone(im)
 
