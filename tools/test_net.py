@@ -64,17 +64,16 @@ if __name__ == '__main__':
     print(cfg)
 
     charnet = CharNet()
-    charnet.load_state_dict(torch.load(cfg.WEIGHT))
-    charnet.eval()
+    
+    from pytorch_modelsize import SizeEstimator
 
-    for im_name in sorted(os.listdir(args.image_dir)):
-        print("Processing {}...".format(im_name))
-        im_file = os.path.join(args.image_dir, im_name)
-        im_original = cv2.imread(im_file)
-        im, scale_w, scale_h, original_w, original_h = resize(im_original, size=cfg.INPUT_SIZE)
-        with torch.no_grad():
-            char_bboxes, char_scores, word_instances = charnet(im, scale_w, scale_h, original_w, original_h)
-            save_word_recognition(
-                word_instances, os.path.splitext(im_name)[0],
-                args.results_dir, cfg.RESULTS_SEPARATOR
-            )
+    se = SizeEstimator(charnet, input_size=(1, 500, 400, 3))
+    print(se.estimate_size())
+
+    # Returns
+    # (size in megabytes, size in bits)
+    # (408.2833251953125, 3424928768)
+
+    print(se.param_bits) # bits taken up by parameters
+    print(se.forward_backward_bits) # bits stored for forward and backward
+    print(se.input_bits) # bits for input
