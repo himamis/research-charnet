@@ -65,15 +65,6 @@ if __name__ == '__main__':
 
     charnet = CharNet()
     
-    from pytorch_modelsize import SizeEstimator
+    from torchsummary import summary
 
-    se = SizeEstimator(charnet, input_size=(1, 500, 400, 3))
-    print(se.estimate_size())
-
-    # Returns
-    # (size in megabytes, size in bits)
-    # (408.2833251953125, 3424928768)
-
-    print(se.param_bits) # bits taken up by parameters
-    print(se.forward_backward_bits) # bits stored for forward and backward
-    print(se.input_bits) # bits for input
+    summary(charnet, input_size=(3, 500, 400))
