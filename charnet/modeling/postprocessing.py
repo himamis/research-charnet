@@ -7,13 +7,10 @@
 
 from torch import nn
 import numpy as np
-import cv2
 import editdistance
 from .utils import rotate_rect
-from .rotated_nms import nms, nms_with_char_cls, \
-    softnms, nms_poly
+from .rotated_nms import nms, nms_with_char_cls
 from shapely.geometry import Polygon
-import pyclipper
 
 
 def load_lexicon(path):
@@ -65,28 +62,17 @@ class OrientedTextPostProcessing(nn.Module):
         self.lexicon = load_lexicon(word_lexicon_path)
 
     def forward(
-            self, pred_word_fg, pred_word_tblr,
-            pred_word_orient, pred_char_fg,
+            self, pred_char_fg,
             pred_char_tblr, pred_char_cls,
             im_scale_w, im_scale_h,
             original_im_w, original_im_h
     ):
-        ss_word_bboxes = self.parse_word_bboxes(
-            pred_word_fg, pred_word_tblr, pred_word_orient,
-            im_scale_w, im_scale_h, original_im_w, original_im_h
-        )
         char_bboxes, char_scores = self.parse_char(
-            pred_word_fg, pred_char_fg, pred_char_tblr, pred_char_cls,
+            pred_char_fg, pred_char_tblr, pred_char_cls,
             im_scale_w, im_scale_h, original_im_w, original_im_h
         )
-        word_instances = self.parse_words(
-            ss_word_bboxes, char_bboxes,
-            char_scores, self.char_dict
-        )
 
-        word_instances = self.filter_word_instances(word_instances, self.lexicon)
-
-        return char_bboxes, char_scores, word_instances
+        return char_bboxes, char_scores
 
     def parse_word_bboxes(
             self, pred_word_fg, pred_word_tblr,
@@ -115,20 +101,12 @@ class OrientedTextPostProcessing(nn.Module):
         return oriented_word_bboxes
 
     def parse_char(
-            self, pred_word_fg, pred_char_fg,
+            self, pred_char_fg,
             pred_char_tblr, pred_char_cls,
             scale_w, scale_h, W, H
     ):
         char_stride = self.char_stride
-        if pred_word_fg.shape == pred_char_fg.shape:
-            char_keep_rows, char_keep_cols = np.where(
-                (pred_word_fg > self.word_min_score) & (pred_char_fg > self.char_min_score))
-        else:
-            th, tw = pred_char_fg.shape
-            word_fg_mask = cv2.resize((pred_word_fg > self.word_min_score).astype(np.uint8),
-                                      (tw, th), interpolation=cv2.INTER_NEAREST).astype(np.bool)
-            char_keep_rows, char_keep_cols = np.where(
-                word_fg_mask & (pred_char_fg > self.char_min_score))
+        char_keep_rows, char_keep_cols = np.where(pred_char_fg > self.char_min_score)
 
         oriented_char_bboxes = np.zeros((char_keep_rows.shape[0], 9), dtype=np.float32)
         char_scores = np.zeros((char_keep_rows.shape[0], self.num_char_class), dtype=np.float32)
@@ -171,7 +149,7 @@ class OrientedTextPostProcessing(nn.Module):
             if len(word_ins.text) < 3:
                 return None
             elif word_ins.text.isalpha():
-                if word_ins.text_score >= 0.80:  
+                if word_ins.text_score >= 0.80:
                     if word_ins.text_score >= 0.98:
                         return word_ins
                     else:

@@ -87,9 +87,8 @@ class CharDetector(nn.Module):
         pred_char_fg = self.char_fg_pred(self.char_fg_feat(feat))
         char_regression_feat = self.char_regression_feat(feat)
         pred_char_tblr = F.relu(self.char_tblr_pred(char_regression_feat)) * 10.
-        pred_char_orient = None
 
-        return pred_char_fg, pred_char_tblr, pred_char_orient
+        return pred_char_fg, pred_char_tblr
 
 
 class CharRecognizer(nn.Module):
@@ -114,10 +113,7 @@ class CharNet(nn.Module):
         self.backbone = hourglass88()
         decoder_channels = 256
         bottleneck_channels = 128
-        self.word_detector = WordDetector(
-            decoder_channels, bottleneck_channels,
-            dilation=cfg.WORD_DETECTOR_DILATION
-        )
+
         self.char_detector = CharDetector(
             decoder_channels,
             bottleneck_channels
@@ -148,33 +144,26 @@ class CharNet(nn.Module):
         im = im.unsqueeze(0)
         features = self.backbone(im)
 
-        pred_word_fg, pred_word_tblr, pred_word_orient = self.word_detector(features)
-        pred_char_fg, pred_char_tblr, pred_char_orient = self.char_detector(features)
+        pred_char_fg, pred_char_tblr = self.char_detector(features)
         recognition_results = self.char_recognizer(features)
 
-        pred_word_fg = F.softmax(pred_word_fg, dim=1)
         pred_char_fg = F.softmax(pred_char_fg, dim=1)
         pred_char_cls = F.softmax(recognition_results, dim=1)
 
-        pred_word_fg, pred_word_tblr, \
-        pred_word_orient, pred_char_fg, \
-        pred_char_tblr, pred_char_cls, \
-        pred_char_orient = to_numpy_or_none(
-            pred_word_fg, pred_word_tblr,
-            pred_word_orient, pred_char_fg,
-            pred_char_tblr, pred_char_cls,
-            pred_char_orient
+        pred_char_fg, pred_char_tblr, \
+        pred_char_cls, pred_char_orient = to_numpy_or_none(
+            pred_char_fg, pred_char_tblr,
+            pred_char_cls
         )
 
-        char_bboxes, char_scores, word_instances = self.post_processing(
-            pred_word_fg[0, 1], pred_word_tblr[0],
-            pred_word_orient[0, 0], pred_char_fg[0, 1],
-            pred_char_tblr[0], pred_char_cls[0],
+        char_bboxes, char_scores = self.post_processing(
+            pred_char_fg[0, 1], pred_char_tblr[0],
+            pred_char_cls[0],
             im_scale_w, im_scale_h,
             original_im_w, original_im_h
         )
 
-        return char_bboxes, char_scores, word_instances
+        return char_bboxes, char_scores
 
     def build_transform(self):
         to_rgb_transform = T.Lambda(lambda x: x[[2, 1, 0]])
