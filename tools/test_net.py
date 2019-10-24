@@ -79,5 +79,5 @@ if __name__ == '__main__':
                 word_instances, os.path.splitext(im_name)[0],
                 args.results_dir, cfg.RESULTS_SEPARATOR
             )
-            result = vis(im, word_instances)
+            result = vis(im_original, word_instances)
             Image.fromarray(result).save(args.results_dir + "/" + os.path.splitext(im_name)[0] + ".png")
