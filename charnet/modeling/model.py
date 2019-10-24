@@ -5,7 +5,6 @@
 #
 # This source code is licensed under the LICENSE file in the root directory of this source tree.
 
-import torch
 from torch import nn
 from charnet.modeling.backbone.resnet import resnet50
 from charnet.modeling.backbone.hourglass import hourglass88
