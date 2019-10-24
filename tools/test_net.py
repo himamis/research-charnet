@@ -11,7 +11,7 @@ import cv2, os
 import numpy as np
 import argparse
 from charnet.config import cfg
-import matplotlib.pyplot as plt
+from PIL import Image
 
 
 def save_word_recognition(word_instances, image_id, save_root, separator=chr(31)):
@@ -79,3 +79,5 @@ if __name__ == '__main__':
                 word_instances, os.path.splitext(im_name)[0],
                 args.results_dir, cfg.RESULTS_SEPARATOR
             )
+            result = vis(im, word_instances)
+            Image.fromarray(result).save(args.results_dir + "/" + os.path.splitext(im_name)[0] + ".png")
