@@ -30,4 +30,6 @@ if __name__ == '__main__':
     charnet = CharNet()
     charnet.cuda()
 
+    
+
 
